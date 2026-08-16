@@ -28,6 +28,30 @@ app.use((req, res, next) => {
   req.requestCount = requestCount;
   next();
 });
+
+function validateDocument(req, res, next) {
+  const { name, type, size } = req.body;
+  const errors = [];
+
+  if (!name || name.trim() === "") {
+    errors.push("Document name is required");
+  }
+
+  if (!type || type.trim === "") {
+    errors.push("Document type is required");
+  }
+
+  if (typeof size !== "number" || size <= 0) {
+    errors.push("Document size must be a positive number");
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({
+      errors,
+    });
+  }
+  next(errors);
+}
 app.get("/", (req, res) => {
   res.json({ time: req.requestTime, count: req.requestCount });
 });
@@ -53,7 +77,7 @@ app.get("/documents/:id", (req, res, next) => {
   res.json(document);
 });
 
-app.post("/documents", (req, res) => {
+app.post("/documents", validateDocument, (req, res) => {
   console.log("Body:", req.body);
   const { name } = req.body;
 
