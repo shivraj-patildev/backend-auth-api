@@ -12,16 +12,32 @@ const documents = [
   { id: 3, name: "Contract.docx" },
 ];
 
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
+app.use((req, res, next) => {
+  req.requestTime = new Date();
+  next();
+});
+
+let requestCount = 0;
+app.use((req, res, next) => {
+  requestCount += 1;
+  req.requestCount = requestCount;
+  next();
+});
 app.get("/", (req, res) => {
-  res.send("Home Page");
+  res.json({ time: req.requestTime, count: req.requestCount });
 });
 
 app.get("/about", (req, res) => {
-  res.send("About Page");
+  res.json({ time: req.requestTime, count: req.requestCount });
 });
 
 app.get("/documents", (req, res) => {
-  res.json(documents);
+  res.json({ documents, time: req.requestTime, count: req.requestCount });
 });
 
 app.get("/documents/:id", (req, res) => {
