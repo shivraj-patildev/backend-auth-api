@@ -40,15 +40,16 @@ app.get("/documents", (req, res) => {
   res.json({ documents, time: req.requestTime, count: req.requestCount });
 });
 
-app.get("/documents/:id", (req, res) => {
+app.get("/documents/:id", (req, res, next) => {
   const id = Number(req.params.id);
 
   const document = documents.find((doc) => doc.id === id);
 
   if (!document) {
-    return res.status(404).json({ message: "Document not found" });
+    const error = new Error("Document to get not found");
+    error.status = 404;
+    return next(error);
   }
-
   res.json(document);
 });
 
@@ -66,14 +67,16 @@ app.post("/documents", (req, res) => {
   res.status(201).json(newDocument);
 });
 
-app.put("/documents/:id", (req, res) => {
+app.put("/documents/:id", (req, res, next) => {
   const id = Number(req.params.id);
   const { name } = req.body;
 
   const document = documents.find((doc) => doc.id === id);
 
   if (!document) {
-    return res.status(404).json({ message: "Document not found" });
+    const error = new Error("Document to Update not found");
+    error.status = 404;
+    return next(error);
   }
 
   document.name = name;
@@ -81,19 +84,28 @@ app.put("/documents/:id", (req, res) => {
   res.json(document);
 });
 
-app.delete("/documents/:id", (req, res) => {
+app.delete("/documents/:id", (req, res, next) => {
   const id = Number(req.params.id);
 
   const index = documents.findIndex((doc) => doc.id === id);
 
   if (index === -1) {
-    return res.status(404).json({ message: "Document not found" });
+    const error = new Error("Document to Delete not found");
+    error.status = 404;
+    return next(error);
   }
 
   const deletedDocument = documents.splice(index, 1);
 
   res.json(deletedDocument[0]);
 });
+
+app.use((err, req, res, next) => {
+  res.status(err.status || 500).json({
+    message: err.message || "Internal Server Error",
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running  at http://localhost:${PORT}`);
 });
