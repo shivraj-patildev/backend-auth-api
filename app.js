@@ -46,12 +46,14 @@ function validateDocument(req, res, next) {
   }
 
   if (errors.length > 0) {
-    return res.status(400).json({
-      errors,
-    });
+    const error = new Error("Validation Failed!");
+    error.status = 400;
+    error.errors = errors;
+    return next(error);
   }
-  next(errors);
+  next();
 }
+
 app.get("/", (req, res) => {
   res.json({ time: req.requestTime, count: req.requestCount });
 });
@@ -127,6 +129,7 @@ app.delete("/documents/:id", (req, res, next) => {
 app.use((err, req, res, next) => {
   res.status(err.status || 500).json({
     message: err.message || "Internal Server Error",
+    errors: err.errors || [],
   });
 });
 
