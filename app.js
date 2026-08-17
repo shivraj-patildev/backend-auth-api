@@ -1,3 +1,7 @@
+require("dotenv").config();
+
+const jwt = require("jsonwebtoken");
+
 const express = require("express");
 
 const app = express();
@@ -54,6 +58,57 @@ function validateDocument(req, res, next) {
   next();
 }
 
+app.post("/login", (req, res) => {
+  const user = {
+    id: 77,
+    role: "admin",
+  };
+  const token = jwt.sign(
+    {
+      userId: user.id,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "1h",
+    },
+  );
+
+  res.json({ token });
+});
+
+function authenticateUser(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    const error = new Error("Authentication required");
+    error.status = 401;
+    return next(error);
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    error.status = 401;
+    next(error);
+  }
+}
+
+function requireRole(role) {
+  return (req, res, next) => {
+    if (req.user.role !== role) {
+      const error = new Error(`${role} access required`);
+      error.status = 403;
+      return next(error);
+    }
+    next();
+  };
+}
+
 app.get("/", (req, res) => {
   res.json({ time: req.requestTime, count: req.requestCount });
 });
@@ -62,8 +117,13 @@ app.get("/about", (req, res) => {
   res.json({ time: req.requestTime, count: req.requestCount });
 });
 
-app.get("/documents", (req, res) => {
-  res.json({ documents, time: req.requestTime, count: req.requestCount });
+app.get("/documents", authenticateUser, (req, res) => {
+  res.json({
+    user: req.user,
+    documents,
+    time: req.requestTime,
+    count: req.requestCount,
+  });
 });
 
 app.get("/documents/:id", (req, res, next) => {
@@ -110,21 +170,26 @@ app.put("/documents/:id", (req, res, next) => {
   res.json(document);
 });
 
-app.delete("/documents/:id", (req, res, next) => {
-  const id = Number(req.params.id);
+app.delete(
+  "/documents/:id",
+  authenticateUser,
+  requireRole("admin"),
+  (req, res, next) => {
+    const id = Number(req.params.id);
 
-  const index = documents.findIndex((doc) => doc.id === id);
+    const index = documents.findIndex((doc) => doc.id === id);
 
-  if (index === -1) {
-    const error = new Error("Document to Delete not found");
-    error.status = 404;
-    return next(error);
-  }
+    if (index === -1) {
+      const error = new Error("Document to Delete not found");
+      error.status = 404;
+      return next(error);
+    }
 
-  const deletedDocument = documents.splice(index, 1);
+    const deletedDocument = documents.splice(index, 1);
 
-  res.json(deletedDocument[0]);
-});
+    res.json(deletedDocument[0]);
+  },
+);
 
 app.use((err, req, res, next) => {
   res.status(err.status || 500).json({
