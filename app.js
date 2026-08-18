@@ -2,6 +2,8 @@ require("dotenv").config();
 
 const jwt = require("jsonwebtoken");
 
+const bcrypt = require("bcrypt");
+
 const express = require("express");
 
 const app = express();
@@ -15,6 +17,8 @@ const documents = [
   { id: 2, name: "Invoice.pdf" },
   { id: 3, name: "Contract.docx" },
 ];
+
+const users = [];
 
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
@@ -31,6 +35,42 @@ app.use((req, res, next) => {
   requestCount += 1;
   req.requestCount = requestCount;
   next();
+});
+
+app.post("/register", async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      const error = new Error("Email and password are required");
+      error.status = 400;
+      return next(error);
+    }
+
+    const existingUser = users.find((user) => user.email === email);
+    if (existingUser) {
+      const error = new Error("User already exists");
+      error.status = 409;
+      return next(error);
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const user = {
+      id: users.length + 1,
+      email,
+      passwordHash,
+      role: "user",
+    };
+    users.push(user);
+
+    res.status(201).json({
+      id: user.id,
+      email: user.email,
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 function validateDocument(req, res, next) {
@@ -58,23 +98,45 @@ function validateDocument(req, res, next) {
   next();
 }
 
-app.post("/login", (req, res) => {
-  const user = {
-    id: 77,
-    role: "admin",
-  };
-  const token = jwt.sign(
-    {
-      userId: user.id,
-      role: user.role,
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: "1h",
-    },
-  );
+app.post("/login", async (req, res, next) => {
+  try {
+    const { email, password, role } = req.body;
 
-  res.json({ token });
+    if (!email || !password) {
+      const error = new Error("Email and Password are required");
+      error.status = 400;
+      return next(error);
+    }
+
+    const user = users.find((user) => user.email === email);
+    if (!user) {
+      const error = new Error("Invalid Credentials");
+      error.status = 401;
+      return next(error);
+    }
+
+    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+    if (!passwordMatches) {
+      const error = new Error("Invalid Credentials");
+      error.status = 401;
+      return next(error);
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1h",
+      },
+    );
+
+    res.json({ token });
+  } catch (error) {
+    next(error);
+  }
 });
 
 function authenticateUser(req, res, next) {
