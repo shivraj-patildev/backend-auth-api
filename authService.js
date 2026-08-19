@@ -1,11 +1,11 @@
-const userRepository = require("./userRepository");
+const userRepository = require("./repositories/userRepository");
 
 const jwt = require("jsonwebtoken");
 
 const bcrypt = require("bcrypt");
 
 async function register(email, password) {
-  const existingUser = userRepository.findUserByEmail(email);
+  const existingUser = await userRepository.findUserByEmail(email);
   if (existingUser) {
     const error = new Error("User already exists");
     error.status = 409;
@@ -17,7 +17,7 @@ async function register(email, password) {
   const user = {
     id: Date.now(),
     email,
-    passwordHash,
+    password_hash,
     role: "user",
   };
   userRepository.createUser(user);
@@ -31,14 +31,14 @@ async function register(email, password) {
 }
 
 async function login(email, password) {
-  const user = userRepository.findUserByEmail(email);
+  const user = await userRepository.findUserByEmail(email);
   if (!user) {
     const error = new Error("Invalid Credentials");
     error.status = 401;
     throw error;
   }
 
-  const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+  const passwordMatches = await bcrypt.compare(password, user.password_hash);
   if (!passwordMatches) {
     const error = new Error("Invalid Credentials");
     error.status = 401;

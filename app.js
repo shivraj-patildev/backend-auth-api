@@ -4,6 +4,24 @@ const authService = require("./authService");
 
 const jwt = require("jsonwebtoken");
 
+const userRepository = require("./repositories/userRepository");
+(async () => {
+  const user = await userRepository.findUserByEmail("does@example.com");
+
+  console.log("Found user:", user);
+})();
+
+const pool = require("./config/db");
+pool.query("SELECT NOW()", (err, result) => {
+  if (err) {
+    console.error("Database connection failed:", err);
+    return;
+  }
+
+  console.log("Database connected!");
+  console.log(result.rows);
+});
+
 const express = require("express");
 
 const app = express();
