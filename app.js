@@ -1,26 +1,11 @@
 require("dotenv").config();
 
-const authService = require("./authService");
+const authService = require("./services/authService");
 
 const jwt = require("jsonwebtoken");
 
-const userRepository = require("./repositories/userRepository");
-(async () => {
-  const user = await userRepository.findUserByEmail("does@example.com");
-
-  console.log("Found user:", user);
-})();
-
-const pool = require("./config/db");
-pool.query("SELECT NOW()", (err, result) => {
-  if (err) {
-    console.error("Database connection failed:", err);
-    return;
-  }
-
-  console.log("Database connected!");
-  console.log(result.rows);
-});
+// const documentRepository = require("./repositories/documentRepository");
+const documentService = require("./services/documentService");
 
 const express = require("express");
 
@@ -149,13 +134,15 @@ app.get("/about", (req, res) => {
   res.json({ time: req.requestTime, count: req.requestCount });
 });
 
-app.get("/documents", authenticateUser, (req, res) => {
-  res.json({
-    user: req.user,
-    documents,
-    time: req.requestTime,
-    count: req.requestCount,
-  });
+app.get("/documents", authenticateUser, async (req, res, next) => {
+  try {
+    const documents = await documentService.getDocumentsByUserId(
+      req.user.userId,
+    );
+    res.status(200).json(documents);
+  } catch (err) {
+    next(err);
+  }
 });
 
 app.get("/documents/:id", (req, res, next) => {
@@ -171,19 +158,22 @@ app.get("/documents/:id", (req, res, next) => {
   res.json(document);
 });
 
-app.post("/documents", validateDocument, (req, res) => {
-  console.log("Body:", req.body);
-  const { name } = req.body;
+app.post(
+  "/documents",
+  validateDocument,
+  authenticateUser,
+  async (req, res, next) => {
+    try {
+      const { name } = req.body;
+      const userId = req.user.userId;
 
-  const newDocument = {
-    id: documents.length + 1,
-    name,
-  };
-
-  documents.push(newDocument);
-
-  res.status(201).json(newDocument);
-});
+      const document = await documentService.createDocument(name, userId);
+      res.status(201).json(document);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 app.put("/documents/:id", (req, res, next) => {
   const id = Number(req.params.id);
