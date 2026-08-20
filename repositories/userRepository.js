@@ -1,5 +1,14 @@
 const pool = require("../config/db");
 
+async function createUser(user) {
+  const result = await pool.query(
+    `INSERT INTO users(email,password_hash)
+                                   VALUES ($1,$2)`,
+    [user.email, user.password_hash],
+  );
+  return result;
+}
+
 async function findUserByEmail(email) {
   const result = await pool.query(
     `
@@ -14,9 +23,6 @@ async function findUserByEmail(email) {
 }
 
 module.exports = {
-  findUserByEmail,
-};
-
-module.exports = {
+  createUser,
   findUserByEmail,
 };

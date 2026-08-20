@@ -12,7 +12,7 @@ async function register(email, password) {
     throw error;
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  const password_hash = await bcrypt.hash(password, 10);
 
   const user = {
     id: Date.now(),
