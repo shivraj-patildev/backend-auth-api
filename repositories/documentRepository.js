@@ -22,7 +22,18 @@ async function getDocumentsByUserId(userId) {
   return result.rows;
 }
 
+async function getDocumentByIdAndUserId(documentId, userId) {
+  const result = await pool.query(
+    `SELECT id, name,user_id
+    FROM documents
+    WHERE id = $1 AND user_id = $2`,
+    [documentId, userId],
+  );
+  return result.rows[0];
+}
+
 module.exports = {
   createDocument,
   getDocumentsByUserId,
+  getDocumentByIdAndUserId,
 };

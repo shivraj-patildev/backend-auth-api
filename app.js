@@ -4,7 +4,7 @@ const authService = require("./services/authService");
 
 const jwt = require("jsonwebtoken");
 
-// const documentRepository = require("./repositories/documentRepository");
+const documentRepository = require("./repositories/documentRepository");
 const documentService = require("./services/documentService");
 
 const express = require("express");
@@ -14,12 +14,6 @@ const app = express();
 app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
-
-const documents = [
-  { id: 1, name: "Resume.pdf" },
-  { id: 2, name: "Invoice.pdf" },
-  { id: 3, name: "Contract.docx" },
-];
 
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
@@ -145,17 +139,25 @@ app.get("/documents", authenticateUser, async (req, res, next) => {
   }
 });
 
-app.get("/documents/:id", (req, res, next) => {
-  const id = Number(req.params.id);
+app.get("/documents/:id", authenticateUser, async (req, res, next) => {
+  try {
+    const documentId = Number(req.params.id);
+    const userId = req.user.userId;
 
-  const document = documents.find((doc) => doc.id === id);
+    const document = await documentService.getDocumentByIdAndUserId(
+      documentId,
+      userId,
+    );
 
-  if (!document) {
-    const error = new Error("Document to get not found");
-    error.status = 404;
-    return next(error);
+    if (!document) {
+      return res.status(404).json({
+        message: "Document not found",
+      });
+    }
+    res.status(200).json(document);
+  } catch (err) {
+    next(err);
   }
-  res.json(document);
 });
 
 app.post(

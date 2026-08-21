@@ -8,7 +8,12 @@ async function getDocumentsByUserId(userId) {
   return await documentRepository.getDocumentsByUserId(userId);
 }
 
+async function getDocumentByIdAndUserId(documentId, userId) {
+  return documentRepository.getDocumentByIdAndUserId(documentId, userId);
+}
+
 module.exports = {
   createDocument,
   getDocumentsByUserId,
+  getDocumentByIdAndUserId,
 };
