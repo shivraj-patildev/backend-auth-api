@@ -12,8 +12,17 @@ async function getDocumentByIdAndUserId(documentId, userId) {
   return documentRepository.getDocumentByIdAndUserId(documentId, userId);
 }
 
+async function updateDocumentByIdAndUserId(documentId, userId, name) {
+  return documentRepository.updateDocumentByIdAndUserId(
+    documentId,
+    userId,
+    name,
+  );
+}
+
 module.exports = {
   createDocument,
   getDocumentsByUserId,
   getDocumentByIdAndUserId,
+  updateDocumentByIdAndUserId,
 };

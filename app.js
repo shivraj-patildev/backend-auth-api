@@ -6,7 +6,14 @@ const jwt = require("jsonwebtoken");
 
 const documentRepository = require("./repositories/documentRepository");
 const documentService = require("./services/documentService");
-
+(async () => {
+  const document = await documentService.updateDocumentByIdAndUserId(
+    4,
+    1,
+    "Final-Resume.pdf",
+  );
+  console.log(document);
+})();
 const express = require("express");
 
 const app = express();
@@ -177,11 +184,16 @@ app.post(
   },
 );
 
-app.put("/documents/:id", (req, res, next) => {
-  const id = Number(req.params.id);
+app.put("/documents/:id", authenticateUser, async (req, res, next) => {
+  const documentId = Number(req.params.id);
   const { name } = req.body;
+  const userId = req.user.userId;
 
-  const document = documents.find((doc) => doc.id === id);
+  const document = await documentService.updateDocumentByIdAndUserId(
+    documentId,
+    userId,
+    name,
+  );
 
   if (!document) {
     const error = new Error("Document to Update not found");

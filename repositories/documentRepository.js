@@ -32,8 +32,21 @@ async function getDocumentByIdAndUserId(documentId, userId) {
   return result.rows[0];
 }
 
+async function updateDocumentByIdAndUserId(documentId, userId, name) {
+  const result = await pool.query(
+    `UPDATE documents
+    SET name = $1
+    WHERE id =$2 AND user_id = $3
+    RETURNING id, name, user_id`,
+    [name, documentId, userId],
+  );
+
+  return result.rows[0];
+}
+
 module.exports = {
   createDocument,
   getDocumentsByUserId,
   getDocumentByIdAndUserId,
+  updateDocumentByIdAndUserId,
 };
