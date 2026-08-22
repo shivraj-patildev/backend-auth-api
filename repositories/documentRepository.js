@@ -44,9 +44,20 @@ async function updateDocumentByIdAndUserId(documentId, userId, name) {
   return result.rows[0];
 }
 
+async function deleteDocumentByIdAndUserId(documentId, userId) {
+  const result = await pool.query(
+    `DELETE FROM documents
+      WHERE id = $1 AND user_id =$2
+      RETURNING id, name, user_id`,
+    [documentId, userId],
+  );
+  return result.rows[0];
+}
+
 module.exports = {
   createDocument,
   getDocumentsByUserId,
   getDocumentByIdAndUserId,
   updateDocumentByIdAndUserId,
+  deleteDocumentByIdAndUserId,
 };

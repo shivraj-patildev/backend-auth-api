@@ -4,16 +4,8 @@ const authService = require("./services/authService");
 
 const jwt = require("jsonwebtoken");
 
-const documentRepository = require("./repositories/documentRepository");
 const documentService = require("./services/documentService");
-(async () => {
-  const document = await documentService.updateDocumentByIdAndUserId(
-    4,
-    1,
-    "Final-Resume.pdf",
-  );
-  console.log(document);
-})();
+
 const express = require("express");
 
 const app = express();
@@ -60,7 +52,7 @@ app.post("/login", async (req, res, next) => {
     if (!email || !password) {
       const error = new Error("Email and Password are required");
       error.status = 400;
-      next(error);
+      return next(error);
     }
 
     const token = await authService.login(email, password);
@@ -71,19 +63,11 @@ app.post("/login", async (req, res, next) => {
 });
 
 function validateDocument(req, res, next) {
-  const { name, type, size } = req.body;
+  const { name } = req.body;
   const errors = [];
 
   if (!name || name.trim() === "") {
     errors.push("Document name is required");
-  }
-
-  if (!type || type.trim === "") {
-    errors.push("Document type is required");
-  }
-
-  if (typeof size !== "number" || size <= 0) {
-    errors.push("Document size must be a positive number");
   }
 
   if (errors.length > 0) {
@@ -188,42 +172,52 @@ app.put("/documents/:id", authenticateUser, async (req, res, next) => {
   const documentId = Number(req.params.id);
   const { name } = req.body;
   const userId = req.user.userId;
+  try {
+    const document = await documentService.updateDocumentByIdAndUserId(
+      documentId,
+      userId,
+      name,
+    );
 
-  const document = await documentService.updateDocumentByIdAndUserId(
-    documentId,
-    userId,
-    name,
-  );
-
-  if (!document) {
-    const error = new Error("Document to Update not found");
-    error.status = 404;
-    return next(error);
-  }
-
-  document.name = name;
-
-  res.json(document);
-});
-
-app.delete(
-  "/documents/:id",
-  authenticateUser,
-  requireRole("admin"),
-  (req, res, next) => {
-    const id = Number(req.params.id);
-
-    const index = documents.findIndex((doc) => doc.id === id);
-
-    if (index === -1) {
-      const error = new Error("Document to Delete not found");
+    if (!document) {
+      const error = new Error("Document to Update not found");
       error.status = 404;
       return next(error);
     }
 
-    const deletedDocument = documents.splice(index, 1);
+    res.json(document);
+  } catch (err) {
+    next(err);
+  }
+});
 
-    res.json(deletedDocument[0]);
+app.delete(
+  "/documents/:id",
+  validateDocument,
+  authenticateUser,
+  requireRole("user"),
+  async (req, res, next) => {
+    try {
+      const documentId = Number(req.params.id);
+      const userId = req.user.userId;
+
+      const document = await documentService.deleteDocumentByIdAndUserId(
+        documentId,
+        userId,
+      );
+
+      if (!document) {
+        const error = new Error("Document to Delete not found");
+        error.status = 404;
+        return next(error);
+      }
+
+      res
+        .status(200)
+        .json({ message: "document deleted successfully", document });
+    } catch (err) {
+      next(err);
+    }
   },
 );
 

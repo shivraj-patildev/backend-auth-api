@@ -20,9 +20,14 @@ async function updateDocumentByIdAndUserId(documentId, userId, name) {
   );
 }
 
+async function deleteDocumentByIdAndUserId(documentId, userId) {
+  return documentRepository.deleteDocumentByIdAndUserId(documentId, userId);
+}
+
 module.exports = {
   createDocument,
   getDocumentsByUserId,
   getDocumentByIdAndUserId,
   updateDocumentByIdAndUserId,
+  deleteDocumentByIdAndUserId,
 };
