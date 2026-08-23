@@ -15,16 +15,15 @@ async function register(email, password) {
   const password_hash = await bcrypt.hash(password, 10);
 
   const user = {
-    id,
     email,
     password_hash,
     role: "user",
   };
-  userRepository.createUser(user);
+  const createUser = await userRepository.createUser(user);
   const safeUser = {
-    id,
-    email,
-    role: "user",
+    id: createUser.id,
+    email: createUser.email,
+    role: createUser.role,
   };
 
   return safeUser;
