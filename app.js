@@ -6,6 +6,8 @@ const documentService = require("./services/documentService");
 
 const authenticateUser = require("./middleware/authenticateUser");
 
+const requireRole = require("./middleware/requireRole");
+
 const express = require("express");
 
 const app = express();
@@ -77,17 +79,6 @@ function validateDocument(req, res, next) {
     return next(error);
   }
   next();
-}
-
-function requireRole(role) {
-  return (req, res, next) => {
-    if (req.user.role !== role) {
-      const error = new Error(`${role} access required`);
-      error.status = 403;
-      return next(error);
-    }
-    next();
-  };
 }
 
 app.get("/", (req, res) => {
@@ -172,7 +163,6 @@ app.put("/documents/:id", authenticateUser, async (req, res, next) => {
 
 app.delete(
   "/documents/:id",
-  validateDocument,
   authenticateUser,
   requireRole("user"),
   async (req, res, next) => {
