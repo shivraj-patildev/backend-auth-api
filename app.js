@@ -8,6 +8,8 @@ const authenticateUser = require("./middleware/authenticateUser");
 
 const requireRole = require("./middleware/requireRole");
 
+const validateDocumentId = require("./middleware/validateDocumentId");
+
 const express = require("express");
 
 const app = express();
@@ -100,26 +102,31 @@ app.get("/documents", authenticateUser, async (req, res, next) => {
   }
 });
 
-app.get("/documents/:id", authenticateUser, async (req, res, next) => {
-  try {
-    const documentId = Number(req.params.id);
-    const userId = req.user.userId;
+app.get(
+  "/documents/:id",
+  authenticateUser,
+  validateDocumentId,
+  async (req, res, next) => {
+    try {
+      const documentId = Number(req.params.id);
+      const userId = req.user.userId;
 
-    const document = await documentService.getDocumentByIdAndUserId(
-      documentId,
-      userId,
-    );
+      const document = await documentService.getDocumentByIdAndUserId(
+        documentId,
+        userId,
+      );
 
-    if (!document) {
-      return res.status(404).json({
-        message: "Document not found",
-      });
+      if (!document) {
+        return res.status(404).json({
+          message: "Document not found",
+        });
+      }
+      res.status(200).json(document);
+    } catch (err) {
+      next(err);
     }
-    res.status(200).json(document);
-  } catch (err) {
-    next(err);
-  }
-});
+  },
+);
 
 app.post(
   "/documents",
@@ -138,33 +145,39 @@ app.post(
   },
 );
 
-app.put("/documents/:id", authenticateUser, async (req, res, next) => {
-  const documentId = Number(req.params.id);
-  const { name } = req.body;
-  const userId = req.user.userId;
-  try {
-    const document = await documentService.updateDocumentByIdAndUserId(
-      documentId,
-      userId,
-      name,
-    );
+app.put(
+  "/documents/:id",
+  authenticateUser,
+  validateDocumentId,
+  async (req, res, next) => {
+    const documentId = Number(req.params.id);
+    const { name } = req.body;
+    const userId = req.user.userId;
+    try {
+      const document = await documentService.updateDocumentByIdAndUserId(
+        documentId,
+        userId,
+        name,
+      );
 
-    if (!document) {
-      const error = new Error("Document to Update not found");
-      error.status = 404;
-      return next(error);
+      if (!document) {
+        const error = new Error("Document to Update not found");
+        error.status = 404;
+        return next(error);
+      }
+
+      res.json(document);
+    } catch (err) {
+      next(err);
     }
-
-    res.json(document);
-  } catch (err) {
-    next(err);
-  }
-});
+  },
+);
 
 app.delete(
   "/documents/:id",
   authenticateUser,
   requireRole("user"),
+  validateDocumentId,
   async (req, res, next) => {
     try {
       const documentId = Number(req.params.id);
