@@ -6,6 +6,10 @@ const documentService = require("./services/documentService");
 
 const authenticateUser = require("./middleware/authenticateUser");
 
+const validateAuthInput = require("./middleware/validateAuthInput");
+
+const validateDocument = require("./middleware/validateDocument");
+
 const requireRole = require("./middleware/requireRole");
 
 const validateDocumentId = require("./middleware/validateDocumentId");
@@ -35,53 +39,25 @@ app.use((req, res, next) => {
   next();
 });
 
-app.post("/register", async (req, res, next) => {
+app.post("/register", validateAuthInput, async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      const error = new Error("Email and password are required");
-      error.status = 400;
-      throw error;
-    }
     const user = await authService.register(email, password);
-    res.status(201).json(user);
+    res.status(201).json({ user });
   } catch (error) {
     next(error);
   }
 });
 
-app.post("/login", async (req, res, next) => {
+app.post("/login", validateAuthInput, async (req, res, next) => {
   try {
-    const { email, password, role } = req.body;
-    if (!email || !password) {
-      const error = new Error("Email and Password are required");
-      error.status = 400;
-      return next(error);
-    }
-
+    const { email, password } = req.body;
     const token = await authService.login(email, password);
     res.json({ token });
   } catch (error) {
     next(error);
   }
 });
-
-function validateDocument(req, res, next) {
-  const { name } = req.body;
-  const errors = [];
-
-  if (!name || name.trim() === "") {
-    errors.push("Document name is required");
-  }
-
-  if (errors.length > 0) {
-    const error = new Error("Validation Failed!");
-    error.status = 400;
-    error.errors = errors;
-    return next(error);
-  }
-  next();
-}
 
 app.get("/", (req, res) => {
   res.json({ time: req.requestTime, count: req.requestCount });
